@@ -15,7 +15,6 @@ Pulse programming in Qiskit is currently implemented as in-memory IR. Design a l
 ## Motivation
 - Improve the process of measuring and creating quantum gates, and hence quantum circuits.
 - Enable the users to express quantum circuits completely and solely using pulses
-
 - Improve the hardware set implementation of the gates.
 - Increase the number of parallel operations that can performed on the quantum device.
 
@@ -99,7 +98,7 @@ acquire a0 c2[0];
 
 ## Detailed Design
 ### QASM Syntax of The Proposed Concepts
-```json
+```
 
 
 # THESE GATES ARE BASED ON THE alt_almaden BACKEND
