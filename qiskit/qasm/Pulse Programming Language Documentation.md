@@ -187,10 +187,15 @@ We add this additional grammar to OpenQASM.
 
 
 ## Alternative Approaches
-One alternative approach to the problem is to implement the pulse-control independently of the QASM and then compile them together to achieve the same results. This is a valid 
+One alternative approach to the problem is to implement the pulse-control independently of the QASM and then compile them together to achieve the same results. One reason to do this is that the pulse control can then stand independently from QASM and we have new, cleaner code from the learnings from the gate model. However, it would make combining pulse and gate definitions more difficult in the converter and scheduler and may touch more code. 
 
 ## Questions
-
+1. Can we merge pulse and gate schedules together in the in memory representation?
+2. Is the best to extend to current lexer and parser or start from scratch for speed and efficiency of the new mixed gate and pulse paradigm?
 
 ## Future Extensions
-Currently, the implementation of gates is backend-specific, to eliminate this, we can implement backend variables on a separate  file and use that file as a guide to gate creation.
+- Add support for automatically getting pulse samples names from specific backends
+- Metadata for specific backends 
+Currently, the implementation of gates is backend-specific. To eliminate this, we can implement backend variables on a separate file and use that file as a guide to gate creation.
+- Extend delay to get timing information from pulse 
+
