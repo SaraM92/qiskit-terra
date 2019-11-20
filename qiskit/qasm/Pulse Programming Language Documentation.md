@@ -160,7 +160,7 @@ gate cx 0, 1 {
 
 ### Grammar
 
-In addition to Open QASM Grammar, we have several grammars.
+We add this additional grammar to OpenQASM. 
 
 ```json
 <statement> := …
@@ -187,7 +187,7 @@ In addition to Open QASM Grammar, we have several grammars.
 
 
 ## Alternative Approaches
-One alternative approach to the problem is to implement the pulse-control independently of the QASM and then compile them together to achieve the same results.
+One alternative approach to the problem is to implement the pulse-control independently of the QASM and then compile them together to achieve the same results. This is a valid 
 
 ## Questions
 
