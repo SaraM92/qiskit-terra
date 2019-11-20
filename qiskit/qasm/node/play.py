@@ -27,10 +27,10 @@ class Play(Node):
     def __init__(self, children):
         """Create the gate node."""
         super().__init__('play', children, None)
-        self.arguments = children[0]  # pylint: disable=invalid-name
+        self.pulse_name = children[0]  # pylint: disable=invalid-name
         self.channel = children[1]
 
     def qasm(self, prec=15):
         """Return the corresponding OPENQASM string."""
-        string = "play " + self.arguments.qasm(prec) + ' ' + self.channel.qasm(prec) + ';'
+        string = "play " + self.pulse_name.qasm(prec) + ' ' + self.channel.qasm(prec) + ';'
         return string

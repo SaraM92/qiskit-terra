@@ -18,6 +18,8 @@ import abc
 from typing import List, Tuple, Iterable, Union, Dict, Callable, Set, Optional, Type
 import warnings
 
+from qiskit.qasm.qasm import Qasm
+
 from .timeslots import Interval
 from .channels import Channel
 from .interfaces import ScheduleComponent
@@ -65,6 +67,30 @@ class Schedule(ScheduleComponent):
             raise PulseError('Child schedules {0} overlap.'.format(schedules)) from ts_err
 
         self.__children = tuple(_children)
+
+    @staticmethod
+    def from_qasm_file(path):
+        """Take in a QASM file and generate a QuantumCircuit object.
+
+        Args:
+          path (str): Path to the file for a QASM program
+        Return:
+          QuantumCircuit: The QuantumCircuit object for the input QASM
+        """
+        qasm = Qasm(filename=path)
+        return _schedule_from_qasm(qasm)
+
+    @staticmethod
+    def from_qasm_str(qasm_str):
+        """Take in a QASM string and generate a QuantumCircuit object.
+
+        Args:
+          qasm_str (str): A QASM program string
+        Return:
+          QuantumCircuit: The QuantumCircuit object for the input QASM
+        """
+        qasm = Qasm(data=qasm_str)
+        return _schedule_from_qasm(qasm)
 
     @property
     def name(self) -> str:
@@ -529,3 +555,13 @@ class ParameterizedSchedule:
     def __call__(self, *args: List[Union[float, complex]],
                  **kwargs: Dict[str, Union[float, complex]]) -> Schedule:
         return self.bind_parameters(*args, **kwargs)
+
+def _schedule_from_qasm(qasm):
+    # pylint: disable=cyclic-import
+    from qiskit.converters import ast_to_dag
+    from qiskit.converters import dag_to_circuit
+    from qiskit.compiler import schedule
+    ast = qasm.parse()
+    dag = ast_to_dag(ast)
+    circuit, cmd_def = dag_to_circuit(dag, return_cmd_def=True)
+    return schedule(circuit, cmd_def=cmd_def)

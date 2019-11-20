@@ -56,11 +56,12 @@ from qiskit.extensions.standard.cu3 import Cu3Gate
 from qiskit.extensions.standard.rzz import RZZGate
 
 
-def ast_to_dag(ast):
+def ast_to_dag(ast, return_cmd_def=False):
     """Build a ``DAGCircuit`` object from an AST ``Node`` object.
 
     Args:
         ast (Program): a Program Node of an AST (parser's output)
+        return_cmd_def (bool): Return the cmd_def for the pulse program
 
     Return:
         DAGCircuit: the DAG representing an OpenQASM's AST
@@ -69,9 +70,12 @@ def ast_to_dag(ast):
         QiskitError: if the AST is malformed.
     """
     dag = DAGCircuit()
-    AstInterpreter(dag)._process_node(ast)
+    ast_interpreter = AstInterpreter()
+    ast_interpreter._process_node(ast)
 
-    return dag
+    if return_cmd_def:
+        return ast_interpreter.dag, ast_interpreter.cmd_def
+    return ast_interpreter.dag
 
 
 class AstInterpreter:
@@ -105,10 +109,13 @@ class AstInterpreter:
                           "ccx": ToffoliGate,
                           "cswap": FredkinGate}
 
-    def __init__(self, dag):
+    pulse_nodes = ['acquire', 'channel', 'delay', 'framechange', 'play', 'pulse']
+
+    def __init__(self):
         """Initialize interpreter's data."""
         # DAG object to populate
-        self.dag = dag
+        self.dag = DAGCircuit()
+        self.cmd_def = CmdDef()
         # OPENQASM version number (ignored for now)
         self.version = 0.0
         # Dict of gates names and properties
@@ -119,6 +126,9 @@ class AstInterpreter:
         self.arg_stack = [{}]
         # List of dictionaries mapping local bit ids to global ids (name, idx)
         self.bit_stack = [{}]
+        # current activate pulse schedule
+        self.curr_schedule_index = 0
+        self.curr_schedule = None
 
     def _process_bit_id(self, node):
         """Process an Id or IndexedId node as a bit or register type.
@@ -207,6 +217,55 @@ class AstInterpreter:
         else:
             de_gate["body"] = node.body
 
+    def _process_micro_program(self, node):
+        """Process a pulse gate node.
+
+        If opaque is True, process the node as an opaque gate node.
+        """
+        self.gates[node.name] = {}
+        de_gate = self.gates[node.name]
+        de_gate["print"] = True  # default
+        de_gate["opaque"] = opaque
+        de_gate["n_args"] = node.n_args()
+        de_gate["n_bits"] = node.n_bits()
+        if node.n_args() > 0:
+            de_gate["args"] = [element.name for element in node.arguments.children]
+        else:
+            de_gate["args"] = []
+        de_gate["bits"] = [c.name for c in node.bitlist.children]
+        if not node.name in self.standard_extension:
+            de_gate["body"] = None
+
+        defined_pulses = {}
+        for pulse_node in node.body:
+            schedule = pulse.Schedule(node.name)
+            if pulse_node.type == 'framechange':
+                schedule += pulse.FrameChange(pulse_node.phase)(pulse_node._process_channel(pulse_node.channel))
+
+            elif pulse_node.type == 'delay':
+                schedule += pulse.Delay(pulse_node.duration)(pulse_node._process_channel(pulse_node.channel))
+
+            elif pulse_node.type == 'play':
+                schedule += defined_pulses[pulse_node.pulse_name](pulse_node._process_channel(pulse_node.channel))
+
+            elif pulse_node.type == 'pulse':
+                pulse_inst = self._process_pulse(pulse_node)
+                defined_pulses[pulse_inst.name] = pulse_inst
+
+            elif pulse_node.type == 'acquire':
+                # need to add duration to acquire statement
+                pulse_inst = pulse.Acquire(1)(pulse_node._process_channel(pulse_node.channel),
+                                              pulse.MemorySlot(pulse_node.creg.index))
+            else:
+                raise Exception('Node is not of type pulse node')
+
+        self.cmd_def.add(node.name, (int(child, 10) for child in node.bitlist), schedule)
+
+    def _process_pulse(pulse_node):
+        pulse_samples = np.asarray([child.complex for child in pulse_node.children], np.complex64)
+        pulse_name = pulse_node.name
+        return pulse.SamplePulse(pulse_samples, pulse_name)
+
     def _process_cnot(self, node):
         """Process a CNOT gate node."""
         id0 = self._process_bit_id(node.children[0])
@@ -249,6 +308,7 @@ class AstInterpreter:
 
     def _process_node(self, node):
         """Carry out the action associated with a node."""
+
         if node.type == "program":
             self._process_children(node)
 
@@ -283,6 +343,9 @@ class AstInterpreter:
 
         elif node.type == "gate":
             self._process_gate(node)
+
+        elif node.type == "micro_program":
+            self._process_micro_program(node)
 
         elif node.type == "custom_unitary":
             self._process_custom_unitary(node)

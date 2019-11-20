@@ -26,6 +26,9 @@ class Complex(Node):
     def __init__(self, children):
         """Create the complex node. Children is an expression list of reals."""
         super().__init__('complex', children, None)
+        self.real = children[0].real
+        self.imag = children[1].imag
+        self.complex = self.real + self.imag*1j
 
     def qasm(self, prec=15):
         """Return the corresponding OPENQASM string."""
