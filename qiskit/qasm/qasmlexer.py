@@ -92,7 +92,6 @@ class QasmLexer:
         'qreg': 'QREG',
         'pi': 'PI',
         'reset': 'RESET',
-
         'dch': 'DCH',
         'uch': 'UCH',
         'mch': 'MCH',
@@ -101,11 +100,6 @@ class QasmLexer:
         'framechange': 'FRAMECHANGE',
         'acquire': 'ACQUIRE',
         'delay' : 'DELAY'
-        'framechange' : 'FRAMECHANGE',
-        'pulse' : 'PULSE',
-        'play' : 'PLAY',
-        'acquire' : 'ACQUIRE',
-        'delay' : 'DELAY',
     }
     tokens = [
         'NNINTEGER',

@@ -370,22 +370,6 @@ class QasmParser:
         program[0] = node.Complex([real_part, imag_part])
 
     # ----------------------------------------
-    #  samples
-    # ----------------------------------------
-    def p_samples_0(self, program):
-        """
-           samples : complex
-        """
-        program[0] = node.Samples([program[1]])
-
-    def p_samples_1(self, program):
-        """
-           samples : samples ',' complex
-        """
-        program[0] = program[1]
-        program[0].add_child(program[3])
-
-    # ----------------------------------------
     #  primary : id
     #          | indexed_id
     # ----------------------------------------
@@ -588,13 +572,13 @@ class QasmParser:
         self.push_scope()
 
     # ----------------------------------------
-    # pulse_decl : PULSE id samples
+    # pulse_decl : PULSE id '[' exp_list ']'
     # ----------------------------------------
     def p_pulse_decl(self, program):
         """
-           pulse_decl : PULSE id samples
+           pulse_decl : PULSE id '[' exp_list ']'
         """
-        program[0] = node.Pulse([program[2], program[3]])
+        program[0] = node.Pulse([program[2], program[4]])
         if program[2].name in self.external_functions:
             raise QasmError("PULSE names cannot be reserved words. "
                             + "Received '" + program[2].name + "'")
@@ -877,20 +861,20 @@ class QasmParser:
     # ----------------------------------------
     # measure : MEASURE primary ASSIGN primary
     # ----------------------------------------
-    def p_measure(self, program):
-        """
-           measure : MEASURE primary ASSIGN primary
-        """
-        program[0] = node.Measure([program[2], program[4]])
-        self.verify_reg(program[2], 'qreg')
-        self.verify_reg(program[4], 'creg')
+    #def p_measure(self, program):
+    #    """
+    #       measure : MEASURE primary ASSIGN primary
+    #    """
+    #    program[0] = node.Measure([program[2], program[4]])
+    #    self.verify_reg(program[2], 'qreg')
+    #    self.verify_reg(program[4], 'creg')
 
-    def p_measure_e(self, program):
-        """
-           measure : MEASURE primary error
-        """
-        raise QasmError("Illegal measure statement." +
-                        str(program[3].value))
+    #def p_measure_e(self, program):
+    #    """
+    #       measure : MEASURE primary error
+    #    """
+    #    raise QasmError("Illegal measure statement." +
+    #                    str(program[3].value))
 
     # ----------------------------------------
     # play : PLAY primary_list channel
@@ -997,7 +981,6 @@ class QasmParser:
     # These are all the things you can have outside of a gate declaration
     #        quantum_op : unitary_op
     #                   | opaque
-    #                   | measure
     #                   | reset
     #                   | barrier
     #                   | if
@@ -1013,7 +996,6 @@ class QasmParser:
         """
             quantum_op : unitary_op
                        | opaque
-                       | measure
                        | barrier
                        | reset
                        | if
@@ -1063,6 +1045,12 @@ class QasmParser:
            unary : '(' expression ')'
         """
         program[0] = program[2]
+
+    def p_unary_5(self, program):
+        """
+           unary : '(' expression ',' expression ')'
+        """
+        program[0] = node.Complex([program[2], program[4]])
 
     def p_unary_6(self, program):
         """
