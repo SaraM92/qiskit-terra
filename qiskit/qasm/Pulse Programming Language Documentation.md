@@ -99,7 +99,7 @@ acquire a0 c2[0];
 
 ## Detailed Design
 ### QASM Syntax of The Proposed Concepts
-```json
+```
 
 
 # THESE GATES ARE BASED ON THE alt_almaden BACKEND
