@@ -294,12 +294,14 @@ class QasmParser:
     # ----------------------------------------
     #  statement : decl
     #            | quantum_op ';'
+    #            | pulse_op ';'
     #            | format ';'
     # ----------------------------------------
     def p_statement(self, program):
         """
            statement : decl
                      | quantum_op ';'
+                     | pulse_op ';'
                      | format ';'
                      | ignore
                      | quantum_op error
@@ -357,17 +359,6 @@ class QasmParser:
             raise QasmError("Missing ']' in indexed ID; received",
                             str(program[4].value))
         program[0] = node.IndexedId([program[1], node.Int(program[3])])
-
-    # ----------------------------------------
-    #  complex : '(' REAL ',' REAL ')'
-    # ----------------------------------------
-    def p_complex(self, program):
-        """
-           complex : '(' REAL ',' REAL ')'
-        """
-        real_part = node.Real(program[2])
-        imag_part = node.Real(program[4])
-        program[0] = node.Complex([real_part, imag_part])
 
     # ----------------------------------------
     #  primary : id
@@ -458,9 +449,9 @@ class QasmParser:
     #  decl : qreg_decl
     #       | creg_decl
     #       | gate_decl
+    #       | channel_decl
     #       | pulse_decl
     # ----------------------------------------
-    #       | channel_decl (Not implemented)
     def p_decl(self, program):
         """
            decl : qreg_decl ';'
@@ -468,6 +459,7 @@ class QasmParser:
                 | qreg_decl error
                 | creg_decl error
                 | gate_decl
+                | channel_decl ';'
                 | pulse_decl ';'
         """
         if len(program) > 2:
@@ -588,6 +580,26 @@ class QasmParser:
         #  self.update_symtab(program[0])
 
     # ----------------------------------------
+    # channel_decl : MCH id
+    #              | UCH id
+    #              | ACH id
+    #              | DCH id
+    # ----------------------------------------
+    def p_channel_decl(self, program):
+        """
+           channel_decl : MCH id
+                        | ACH id
+                        | UCH id
+                        | DCH id
+        """
+        # TODO: need channel type ?
+        program[0] = node.Channel([program[2]])
+        if program[2].name in self.external_functions:
+            raise QasmError("CHANNEL names cannot be reserved words. "
+                            + "Received '" + program[2].name + "'")
+        self.update_symtab(program[0])
+
+    # ----------------------------------------
     #  gate_body : '{' gate_op_list '}'
     #            | '{' '}'
     #
@@ -698,10 +710,12 @@ class QasmParser:
     #
     # gate_op : U '(' exp_list ')'  id         ';'
     #         | CX                  id ',' id  ';'
+    #         | pulse_op                       ';'
     #         | id                  id_list    ';'
     #         | id '(' ')'          id_list    ';'
     #         | id '(' exp_list ')' id_list    ';'
     #         | BARRIER id_list                ';'
+    #         | CH_BARRIER id_list             ';'
     # ----------------------------------------
     def p_gate_op_0(self, program):
         """
@@ -814,6 +828,18 @@ class QasmParser:
         """
         raise QasmError("Invalid barrier inside gate definition.")
 
+    def p_gate_op_6(self, program):
+        """
+           gate_op : pulse_op ';'
+        """
+        program[0] = program[1]
+
+    def p_gate_op_7(self, program):
+        """
+           ch_barrier : CH_BARRIER id_list ';'
+        """
+        program[0] = node.ChannelBarrier([program[2]])
+
     # ----------------------------------------
     # opaque : OPAQUE id gate_scope                      bit_list
     #        | OPAQUE id gate_scope '(' ')'              bit_list
@@ -877,52 +903,62 @@ class QasmParser:
     #                    str(program[3].value))
 
     # ----------------------------------------
-    # play : PLAY primary_list channel
+    # play : PLAY primary primary
     #
     # Errors are covered by handling erros in primary_list
     # ----------------------------------------
-    #def p_play(self, program):
-    #    """
-    #    play : PLAY primary_list channel
-    #    """
-    #    program[0] = node.Play([program[2], program[4]]) #the pulse name, channel
+    def p_play(self, program):
+        """
+        play : PLAY primary primary
+        """
+        program[0] = node.Play([program[2], program[3]]) #the pulse name, channel
 
     # ----------------------------------------
-    # acquire : ACQUIRE primary_list channel
+    # acquire : ACQUIRE primary primary
     #
     # Errors are covered by handling erros in primary_list
     # ----------------------------------------
-    #def p_acquire(self, program):
-    #    """
-    #    acquire : ACQUIRE primary_list channel
-    #    """
-    #    program[0] = node.Acquire([program[2], program[4]]) #acquire channel, creg
-    #    self.verify_reg_list(program[4], 'creg')
+    def p_acquire(self, program):
+        """
+        acquire : ACQUIRE primary primary
+        """
+        program[0] = node.Acquire([program[2], program[3]]) #acquire channel, creg
+        self.verify_reg(program[3], 'creg')
 
     # ----------------------------------------
-    # framechange : FRAMECHANGE '(' exp_list ')' channel
+    # framechange : FRAMECHANGE '(' exp_list ')' primary
     #
     # Errors are covered by handling erros in primary_list
     # ----------------------------------------
-    #def p_framechange(self, program):
-    #    """
-    #      framechange : FRAMECHANGE '(' exp_list ')' channel
-    #    """
-    #    program[0] = node.Framechange([program[3], program[5]])
-    #    self.verify_exp_list(program[3])
+    def p_framechange(self, program):
+        """
+          framechange : FRAMECHANGE '(' exp_list ')' primary
+        """
+        program[0] = node.Framechange([program[3], program[5]])
+        self.verify_exp_list(program[3])
 
     # ----------------------------------------
-    # delay : DELAY '(' exp_list ')' id
+    # delay : DELAY '(' exp_list ')' primary
     #
     # Errors are covered by handling erros in primary_list
     # ----------------------------------------
-    #def p_delay(self, program):
-    #    """
-    #      delay : delay '(' exp_list ')' id
-    #    """
-    #    program[0] = node.Delay([program[3], program[5]])
-    #    self.verify_exp_list(program[3])
-    #    self.ver
+    def p_delay(self, program):
+        """
+          delay : DELAY '(' exp_list ')' primary
+        """
+        program[0] = node.Delay([program[3], program[5]])
+        self.verify_exp_list(program[3])
+
+    # ----------------------------------------
+    # ch_barrier : CH_BARRIER primary_list
+    #
+    # Errors are covered by handling erros in primary_list
+    # ----------------------------------------
+    def p_ch_barrier(self, program):
+        """
+           ch_barrier : CH_BARRIER primary_list
+        """
+        program[0] = node.ChannelBarrier(program[2])
 
     # ----------------------------------------
     # barrier : BARRIER primary_list
@@ -949,10 +985,12 @@ class QasmParser:
 
     # ----------------------------------------
     # IF '(' ID MATCHES NNINTEGER ')' quantum_op
+    # IF '(' ID MATCHES NNINTEGER ')' pulse_op
     # ----------------------------------------
     def p_if(self, program):
         """
         if : IF '(' id MATCHES NNINTEGER ')' quantum_op
+        if : IF '(' id MATCHES NNINTEGER ')' pulse_op
         if : IF '(' id error
         if : IF '(' id MATCHES error
         if : IF '(' id MATCHES NNINTEGER error
@@ -986,12 +1024,6 @@ class QasmParser:
     #                   | if
     #
     # ----------------------------------------
-    #        pulse_op : framechange (Not implemented)
-    #                 | play (Not implemented)
-    #                 | acquire (Not implemented)
-    #                 | delay (Not implemented)
-    #
-    # ----------------------------------------
     def p_quantum_op(self, program):
         """
             quantum_op : unitary_op
@@ -1000,10 +1032,22 @@ class QasmParser:
                        | reset
                        | if
         """
-        # | framechange
-        # | play
-        # | acquire
-        # | delay
+        program[0] = program[1]
+
+    # ----------------------------------------
+    #        pulse_op : framechange
+    #                 | play
+    #                 | acquire
+    #                 | delay
+    # ----------------------------------------
+    def p_pulse_op(self, program):
+        """
+           pulse_op : framechange
+                    | play
+                    | acquire
+                    | delay
+                    | ch_barrier
+        """
         program[0] = program[1]
 
     # ----------------------------------------

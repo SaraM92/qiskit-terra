@@ -35,7 +35,7 @@ class Channel(Node):
         # Source file name
         self.file = self.id.file
         # Size of the register
-        self.index = self.id.index
+        #self.index = self.id.index
 
     def qasm(self, prec=15):
         """Return the corresponding pulse string."""

@@ -18,6 +18,7 @@ from .acquire import Acquire
 from .barrier import Barrier
 from .binaryop import BinaryOp
 from .binaryoperator import BinaryOperator
+from .ch_barrier import ChannelBarrier
 from .channel import Channel
 from .cnot import Cnot
 from .creg import Creg
