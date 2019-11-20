@@ -59,24 +59,24 @@ creg c0[1];
 creg c1[1];
 creg c2[1];
 
-fc(-0.1) d0;
+framechange(-0.1) d0;
 pulse X90p_q0 d0;
-fc(-0.3) d0;
+framechange(-0.3) d0;
 pulse X90m_q0 d0;
-fc(-0.2) d0;
+framechange(-0.2) d0;
 
 h q[1];
 cx q[1],q[2];
 barrier q;
 
-fc(np.pi/2) d0;
+framechange(np.pi/2) d0;
 pulse Ym_d0 d0;
 pulse X90p_d1 d1;
-barrier d0, d1, u0;
+ch_barrier d0, d1, u0;
 pulse CR90p_d1 d1;
-barrier d0, d1, u0;
+ch_barrier d0, d1, u0;
 pulse Xp_d0 d0;
-barrier d0, d1, u0;
+ch_barrier d0, d1, u0;
 pulse CR90m_d1 d1;
 
 h q[0];
@@ -98,36 +98,35 @@ acquire a0 c2[0];
 
 ## Detailed Design
 ### QASM Syntax of The Proposed Concepts
+
 ```
-
-
 # THESE GATES ARE BASED ON THE alt_almaden BACKEND
 # pulses are defined for specific devices, or user can add their own
 
 gate u3(theta, phi, lambda) 0 {
-	fc(-lambda) d0;
+	framechange(-lambda) d0;
 	pulse X90p_q0 d0;
-	fc(-theta) d0;
+	framechange(-theta) d0;
 	pulse X90m_q0 d0;
-	fc(-phi) d0;
+	framechange(-phi) d0;
 }
 
 gate u3(theta, phi, lambda) 1 {
-	fc(-lambda) d1;
+	framechange(-lambda) d1;
 	pulse X90p_q1 d1;
-	fc(-theta) d1;
+	framechange(-theta) d1;
 	pulse X90m_q1 d1;
-	fc(-phi) d1;
+	framechange(-phi) d1;
 }
 
 gate u2(phi, lambda) 0 {
-	fc(-lambda) d0;
+	framechange(-lambda) d0;
 	pulse Y90p_q0 d0;
-	fc(-phi) d0;
+	framechange(-phi) d0;
 }
 
 gate u1(lambda) 0 {
-	fc(-lambda) d0;
+	framechange(-lambda) d0;
 }
 
 gate x 0 {
@@ -146,14 +145,14 @@ gate measure 0 {
 }
 
 gate cx 0, 1 {
-	fc(np.pi/2) d0;
+	framechange(np.pi/2) d0;
 	pulse Ym_d0 d0;
 	pulse X90p_d1 d1;
-	barrier d0, d1, u0;
+	ch_barrier d0, d1, u0;
 	pulse CR90p_d1 d1;
-	barrier d0, d1, u0;
+	ch_barrier d0, d1, u0;
 	pulse Xp_d0 d0;
-	barrier d0, d1, u0;
+	ch_barrier d0, d1, u0;
 	pulse CR90m_d1 d1;
 }
 
