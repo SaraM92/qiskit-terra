@@ -31,7 +31,7 @@ The pulse module in Qiskit allows scheduling of pulse instructions absolutely in
 
 ### Introducing New Concepts
 We introduce an approach to express any given quantum circuit using pulse to enable pulse-level control of the backend quantum device.  
-This is done via introducing the following types to QASM: 
+This is done via introducing the following types to QASM:
 - Channel: This represents the actual channel which the pulse run through in the specified backend device.
 - Pulse: An object representing a pulse (contains a list of real and complex samples that define the pulse shape).
 - Play: plays a pulse on a given channel.
@@ -40,13 +40,13 @@ This is done via introducing the following types to QASM:
 - Barrier: A method of aligning different channels.
 
 
-    
+
 ### Quantum Teleportation Using The Proposed Approach
-Alice wants to send quantum information to Bob. Specifically, suppose she wants to send the state  |ψ⟩=α|0⟩+β|1⟩  to Bob. This entails passing on information about  α  and  β  to Bob.
+Alice wants to send quantum information to Bob. Specifically, suppose she wants to send the state  |ψ\UTF{27E9}=α|0\UTF{27E9}+β|1\UTF{27E9}  to Bob. This entails passing on information about  α  and  β  to Bob.
 
-There exists a theorem in quantum mechanics which states that you cannot simply make an exact copy of an unknown quantum state. This is known as the no-cloning theorem. As a result of this we can see that Alice can't simply generate a copy of  |ψ⟩  and give the copy to Bob. Copying a state is only possible with a classical computation.
+There exists a theorem in quantum mechanics which states that you cannot simply make an exact copy of an unknown quantum state. This is known as the no-cloning theorem. As a result of this we can see that Alice can't simply generate a copy of  |ψ\UTF{27E9}  and give the copy to Bob. Copying a state is only possible with a classical computation.
 
-However, by taking advantage of two classical bits and entanglement, Alice can transfer the state  |ψ⟩  to Bob. We call this teleportation as at the end Bob will have  |ψ⟩  and Alice won't anymore. 
+However, by taking advantage of two classical bits and entanglement, Alice can transfer the state  |ψ\UTF{27E9}  to Bob. We call this teleportation as at the end Bob will have  |ψ\UTF{27E9}  and Alice won't anymore.
 
 We implemented teleportation using our approach as follows:
 ```json
@@ -60,7 +60,7 @@ creg c1[1];
 creg c2[1];
 #u3(0.3,0.2,0.1) q[0];
 fc(-0.1) d0;
-pulse X90p_q0 d0; 
+pulse X90p_q0 d0;
 fc(-0.3) d0;
 pulse X90m_q0 d0;
 fc(-0.2) d0;
@@ -74,8 +74,8 @@ pulse Ym_d0 d0;
 pulse X90p_d1 d1;
 barrier d0, d1, u0;
 pulse CR90p_d1 d1;
-barrier d0, d1, u0; 
-pulse Xp_d0 d0; 
+barrier d0, d1, u0;
+pulse Xp_d0 d0;
 barrier d0, d1, u0;
 pulse CR90m_d1 d1;
 ####
@@ -102,20 +102,20 @@ acquire a0 c2[0];
 
 #THESE GATES ARE BASED ON THE alt_almaden BACKEND
 #pulses defined for specific devices
-# user could add custom pulses 
-pulse X90p_q0 [samples] # fill this out OR just get from the library 
+# user could add custom pulses
+pulse X90p_q0 [samples] # fill this out OR just get from the library
 pulse X90m_q0 [samples]
 -------------
 gate_custom u3(theta, phi, lambda) 0 {
 	fc(-lambda) d0;
-	pulse X90p_q0 d0; 
+	pulse X90p_q0 d0;
 	fc(-theta) d0;
 	pulse X90m_q0 d0;
 	fc(-phi) d0;
 }
 gate_custom u3(theta, phi, lambda) 1 {
 	fc(-lambda) d1;
-	pulse X90p_q1 d1; 
+	pulse X90p_q1 d1;
 	fc(-theta) d1;
 	pulse X90m_q1 d1;
 	fc(-phi) d1;
@@ -153,33 +153,41 @@ gate_custom cx 0, 1 {
 	pulse X90p_d1 d1;
 	barrier d0, d1, u0;
 	pulse CR90p_d1 d1;
-	barrier d0, d1, u0; 
-	pulse Xp_d0 d0; 
+	barrier d0, d1, u0;
+	pulse Xp_d0 d0;
 	barrier d0, d1, u0;
 	pulse CR90m_d1 d1;
 }
  ------
 ```
 
-### Formal Definition
-```json
+### Grammar
 
+In addition to Open QASM Grammar, we have several grammars.
+
+```json
+<statement> := …
+              | <pop>
+              | …
+              | ch_barrier <anylist>;
 <chdecl> := uch <id> | ach <id> | dch <id> | mch <id>
+<pulsedecl> := pulse <id> <explist>
 <goplist> := …
              | <pop>
              | <goplist> <pop>
-<pop> :=   fc(<explist>) <argument>; (* t0, phase / ch *)
-         | pulse <argument>;  
+<pop> :=   framechange(<explist>) <argument>; (* t0, phase / ch *)
+         | play <argument>;  
          | pv(<explist>) <argument>;  (* t0,val(complex value) / ch *)
          | acquire(<explist>) <argument> <argument> <argument>;
-           (* t0, duration / qubits, memory_slot, register_slot in this order *) 
+           (* t0, duration / qubits, memory_slot, register_slot in this order *)
          | delay(<explist>) <argument>; (* duration / channel *)
          | ch_barrier <argument>; (* channels *)         
          | <id> <anylist>;
          | <id>() <anylist>;
          | <id>(<explist>) <anylist>;
+
 ```
-    
+
 
 ## Alternative Approaches
 One alternative approach to the problem is to implement the pulse-control independently of the QASM and then compile them together to achieve the same results.
