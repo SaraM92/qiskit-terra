@@ -112,7 +112,7 @@ acquire a0 c[2];
 # THESE GATES ARE BASED ON THE alt_almaden BACKEND
 # pulses are defined for specific devices, or user can add their own
 
-gate u3(theta, phi, lambda) 0 {
+gate u3(theta, phi, lambda) a {
 	framechange(-lambda) d0;
 	play X90p_q0 d0;
 	framechange(-theta) d0;
@@ -120,7 +120,7 @@ gate u3(theta, phi, lambda) 0 {
 	framechange(-phi) d0;
 }
 
-gate u3(theta, phi, lambda) 1 {
+gate u3(theta, phi, lambda) a {
 	framechange(-lambda) d1;
 	play X90p_q1 d1;
 	framechange(-theta) d1;
@@ -128,33 +128,33 @@ gate u3(theta, phi, lambda) 1 {
 	framechange(-phi) d1;
 }
 
-gate u2(phi, lambda) 0 {
+gate u2(phi, lambda) a {
 	framechange(-lambda) d0;
 	play Y90p_q0 d0;
 	framechange(-phi) d0;
 }
 
-gate u1(lambda) 0 {
+gate u1(lambda) a {
 	framechange(-lambda) d0;
 }
 
-gate x 0 {
+gate x a {
 	play Xp_d0 d0;
 }
 
-gate id 0 {
+gate id a {
 	play QId_d0 d0;
 }
 
-gate measure 0 {
+gate measure a {
 	play M_m0 m0;
 	acquire m0 creg[0];
 	acquire m1 creg[1];
 	acquire m2 creg[2]; # continue on for all qubits ...
 }
 
-gate cx 0, 1 {
-	framechange(np.pi/2) d0;
+gate cx a, b {
+	framechange(pi/2) d0;
 	play Ym_d0 d0;
 	play X90p_d1 d1;
 	ch_barrier d0, d1, u0;
@@ -162,7 +162,7 @@ gate cx 0, 1 {
 	ch_barrier d0, d1, u0;
 	play Xp_d0 d0;
 	ch_barrier d0, d1, u0;
-	play CR90m_d1 d1;
+	play CR90m_d1 d
 }
 
 ```
