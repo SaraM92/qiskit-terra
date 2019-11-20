@@ -52,46 +52,55 @@ We implemented teleportation using our approach as follows:
 ```json
 
 # quantum teleportation example after
+//quantum teleportation example after
+
 OPENQASM 3.0;
 include "qelib1.inc";
 qreg q[3];
-creg c0[1];
-creg c1[1];
-creg c2[1];
+creg c[3];
+
+// declare channels
+dch d0;
+dch d1;
+uch uch0;
+mch m0;
+mch m1;
 
 framechange(-0.1) d0;
-pulse X90p_q0 d0;
+play x90p_q0 d0;
 framechange(-0.3) d0;
-pulse X90m_q0 d0;
+play x90m_q0 d0;
 framechange(-0.2) d0;
+
 
 h q[1];
 cx q[1],q[2];
+
 barrier q;
 
-framechange(np.pi/2) d0;
-pulse Ym_d0 d0;
-pulse X90p_d1 d1;
-ch_barrier d0, d1, u0;
-pulse CR90p_d1 d1;
-ch_barrier d0, d1, u0;
-pulse Xp_d0 d0;
-ch_barrier d0, d1, u0;
-pulse CR90m_d1 d1;
+framechange(pi/2) d0;
+play ym_d0 d0;
+play x90p_d1 d1;
+ch_barrier d0, d1, uch0;
+play cR90p_d1 d1;
+ch_barrier d0, d1, uch0;
+play xp_d0 d0;
+ch_barrier d0, d1, uch0;
+play cR90m_d1 d1;
 
 h q[0];
 
-pulse M_m0 m0;
-acquire a0 c0[0];
+play m_m0 m0;
+acquire a0 c[0];
 
-pulse M_m1 m1;
-acquire a0 c1[0];
+play m_m1 m1;
+acquire a0 c[1];
+
 if(c0==1) z q[2];
+if(c1==1) play xp_d2 d2;
 
-if(c1==1) pulse Xp_d2 d2;
-
-pulse M_m2 m2;
-acquire a0 c2[0];
+play m_m2 m2;
+acquire a0 c[2];
 
 ```
 
@@ -105,23 +114,23 @@ acquire a0 c2[0];
 
 gate u3(theta, phi, lambda) 0 {
 	framechange(-lambda) d0;
-	pulse X90p_q0 d0;
+	play X90p_q0 d0;
 	framechange(-theta) d0;
-	pulse X90m_q0 d0;
+	play X90m_q0 d0;
 	framechange(-phi) d0;
 }
 
 gate u3(theta, phi, lambda) 1 {
 	framechange(-lambda) d1;
-	pulse X90p_q1 d1;
+	play X90p_q1 d1;
 	framechange(-theta) d1;
-	pulse X90m_q1 d1;
+	play X90m_q1 d1;
 	framechange(-phi) d1;
 }
 
 gate u2(phi, lambda) 0 {
 	framechange(-lambda) d0;
-	pulse Y90p_q0 d0;
+	play Y90p_q0 d0;
 	framechange(-phi) d0;
 }
 
@@ -130,15 +139,15 @@ gate u1(lambda) 0 {
 }
 
 gate x 0 {
-	pulse Xp_d0 d0;
+	play Xp_d0 d0;
 }
 
 gate id 0 {
-	pulse QId_d0 d0;
+	play QId_d0 d0;
 }
 
 gate measure 0 {
-	pulse M_m0 m0;
+	play M_m0 m0;
 	acquire m0 creg[0];
 	acquire m1 creg[1];
 	acquire m2 creg[2]; # continue on for all qubits ...
@@ -146,14 +155,14 @@ gate measure 0 {
 
 gate cx 0, 1 {
 	framechange(np.pi/2) d0;
-	pulse Ym_d0 d0;
-	pulse X90p_d1 d1;
+	play Ym_d0 d0;
+	play X90p_d1 d1;
 	ch_barrier d0, d1, u0;
-	pulse CR90p_d1 d1;
+	play CR90p_d1 d1;
 	ch_barrier d0, d1, u0;
-	pulse Xp_d0 d0;
+	play Xp_d0 d0;
 	ch_barrier d0, d1, u0;
-	pulse CR90m_d1 d1;
+	play CR90m_d1 d1;
 }
 
 ```
@@ -192,10 +201,10 @@ One alternative approach to the problem is to implement the pulse-control indepe
 ## Questions
 1. Can we merge pulse and gate schedules together in the in memory representation?
 2. Is the best to extend to current lexer and parser or start from scratch for speed and efficiency of the new mixed gate and pulse paradigm?
+3. What standard should we set for pulse samples?
 
 ## Future Extensions
 - Add support for automatically getting pulse samples names from specific backends
 - Metadata for specific backends 
 Currently, the implementation of gates is backend-specific. To eliminate this, we can implement backend variables on a separate file and use that file as a guide to gate creation.
 - Extend delay to get timing information from pulse 
-
